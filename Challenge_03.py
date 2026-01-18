@@ -1,6 +1,6 @@
-def broadcast_simple(N, K, operations):
+def broadcast_optimized(N, K, operations):
     subs = [set() for _ in range(N + 1)]
-    messages = []  # (id, sender, critical)
+    user_msgs = [[] for _ in range(N + 1)]
     msg_id = 0
 
     for op in operations:
@@ -18,22 +18,26 @@ def broadcast_simple(N, K, operations):
             u, m = int(parts[1]), int(parts[2])
             msg_id += 1
             critical = (m % 3 == 0)
-            messages.append((msg_id, u, critical))
+
+            user_msgs[u].append((msg_id, critical))
+            if len(user_msgs[u]) > K:
+                user_msgs[u].pop(0)
 
         elif parts[0] == 'F':
             u = int(parts[1])
-            feed = []
+            pool = []
 
-            for mid, sender, critical in reversed(messages):
-                if sender == u or sender in subs[u]:
-                    feed.append(mid)
-                if len(feed) == 10:
-                    break
+            pool.extend(user_msgs[u])
+            for v in subs[u]:
+                pool.extend(user_msgs[v])
 
-            if feed:
-                print(*feed)
-            else:
+            if not pool:
                 print("EMPTY")
+                continue
+
+            pool.sort(key=lambda x: (-x[0], -x[1]))
+            result = [str(mid) for mid, _ in pool[:10]]
+            print(" ".join(result))
 
 
 N = 3
@@ -50,4 +54,5 @@ ops = [
     "F 2"
 ]
 
-broadcast_simple(N, K, ops)
+broadcast_optimized(N, K, ops)
+
